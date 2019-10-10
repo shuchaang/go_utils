@@ -43,7 +43,7 @@ func (q *linkedQueue) Offer(v interface{}) {
 		next:  nil,
 		prev:  nil,
 	}
-	if q.Size() == 0 {
+	if q.Len() == 0 {
 		q.head.next = newNode
 		q.tail.prev = newNode
 		newNode.prev = q.head
@@ -57,12 +57,12 @@ func (q *linkedQueue) Offer(v interface{}) {
 	q.size++
 }
 
-func (q *linkedQueue) Size() int {
+func (q *linkedQueue) Len() int {
 	return q.size
 }
 
 func (q *linkedQueue) Poll() interface{} {
-	if q.Size() == 0 {
+	if q.Len() == 0 {
 		return nil
 	}
 	tmp := q.head.next

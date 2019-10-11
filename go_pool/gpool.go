@@ -2,7 +2,6 @@ package go_pool
 
 import (
 	"context"
-	"github.com/pkg/errors"
 	"sync"
 	"time"
 )
@@ -38,7 +37,6 @@ type GoPool struct {
 	cancel         context.CancelFunc
 	isClose        bool
 	maxWorker      int
-	minWorker      int
 	idleTimeOut    time.Duration
 	dispatchPeriod time.Duration
 	JobQueueSize   int
@@ -87,10 +85,6 @@ func (p *GoPool) handle() {
 func (p GoPool) killWorker(timer *time.Timer) {
 	p.Lock()
 	defer p.Unlock()
-	if p.currWorker <= p.minWorker {
-		timer.Reset(p.idleTimeOut)
-		return
-	}
 	p.currWorker--
 	timer.Stop()
 }
@@ -98,7 +92,6 @@ func (p GoPool) killWorker(timer *time.Timer) {
 func NewPool(opt *Options) (*GoPool, error) {
 	//config
 	pool := GoPool{}
-	pool.minWorker = opt.MinWorker
 	pool.maxWorker = opt.MaxWorker
 	pool.JobQueueSize = opt.JobQueueSize
 	pool.idleTimeOut = opt.IdleTimeOut
@@ -112,16 +105,8 @@ func NewPool(opt *Options) (*GoPool, error) {
 		pool.dispatchPeriod = DefaultDispatchPeriod
 	}
 
-	if pool.minWorker < 1 {
-		pool.minWorker = pool.maxWorker / 5
-	}
-
 	if pool.JobQueueSize <= 0 {
 		pool.JobQueueSize = pool.maxWorker
-	}
-
-	if pool.maxWorker < pool.minWorker {
-		return nil, errors.New("max size less than min size!")
 	}
 
 	//init
@@ -154,6 +139,7 @@ func (p GoPool) SupplyAsync(fn Runnable) error {
 }
 
 func (p GoPool) trySpawnWorker() {
+	//不到max 扩容
 	if len(p.jobChan) > 0 && p.currWorker < p.maxWorker {
 		p.dispatch(p.maxWorker / bucketSize)
 	}

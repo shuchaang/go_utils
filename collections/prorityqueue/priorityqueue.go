@@ -5,43 +5,76 @@ import "container/heap"
 type Node struct {
 	value    interface{} //每个节点存储的元素
 	priority int         //优先级
-	index    int         //堆中的索引
 }
 
-type PQ []*Node
-
-// 下面的方法实现了 go/src/sort/sort.go:14 接口的方法
-
-func (pq PQ) Len() int { return len(pq) }
-
-func (pq PQ) Less(i, j int) bool {
-	return pq[i].priority < pq[j].priority
+type Interface interface {
+	Less(node *Node) bool
 }
 
-func (pq PQ) Swap(i, j int) {
-	pq[i], pq[j] = pq[j], pq[i]
-	pq[i].index = i
-	pq[j].index = j
+type sorter []Interface
+
+// Implement heap.Interface: Push, Pop, Len, Less, Swap
+func (s *sorter) Push(x interface{}) {
+	*s = append(*s, x.(Interface))
 }
 
-// Push 往 pq 中放 entry
-func (pq *PQ) Push(x interface{}) {
-	temp := x.(*Node)
-	temp.index = len(*pq)
-	*pq = append(*pq, temp)
+func (s *sorter) Pop() interface{} {
+	n := len(*s)
+	if n > 0 {
+		x := (*s)[n-1]
+		*s = (*s)[0 : n-1]
+		return x
+	}
+	return nil
 }
 
-// Pop 从 pq 中取出最优先的 entry
-func (pq *PQ) Pop() interface{} {
-	temp := (*pq)[len(*pq)-1]
-	temp.index = -1 // for safety
-	*pq = (*pq)[0 : len(*pq)-1]
-	return temp
+func (s *sorter) Len() int {
+	return len(*s)
 }
 
-// update modifies the priority and value of an entry in the queue.
-func (pq *PQ) update(entry *Node, value string, priority int) {
-	entry.value = value
-	entry.priority = priority
-	heap.Fix(pq, entry.index)
+func (s *sorter) Less(i, j int) bool {
+	return (*s)[i].Less((*s)[j].(*Node))
+}
+
+func (s *sorter) Swap(i, j int) {
+	(*s)[i], (*s)[j] = (*s)[j], (*s)[i]
+}
+
+// Define priority queue struct
+type PriorityQueue struct {
+	s *sorter
+}
+
+func NewPriorityQ() *PriorityQueue {
+	q := &PriorityQueue{s: new(sorter)}
+	heap.Init(q.s)
+	return q
+}
+
+func (q *PriorityQueue) Push(node *Node) {
+	heap.Push(q.s, node)
+}
+
+func (q *PriorityQueue) Pop() *Node {
+	return heap.Pop(q.s).(*Node)
+}
+
+func (q *PriorityQueue) Top() *Node {
+	if len(*q.s) > 0 {
+		return (*q.s)[0].(*Node)
+	}
+	return nil
+}
+
+func (q *PriorityQueue) Fix(x Interface, i int) {
+	(*q.s)[i] = x
+	heap.Fix(q.s, i)
+}
+
+func (q *PriorityQueue) Remove(i int) Interface {
+	return heap.Remove(q.s, i).(Interface)
+}
+
+func (q *PriorityQueue) Len() int {
+	return q.s.Len()
 }

@@ -1,40 +1,24 @@
 package prorityqueue
 
 import (
-	"container/heap"
 	"testing"
 )
 
 func TestPQ_Len(t *testing.T) {
+	q := NewPriorityQ()
+	q.Push(&Node{priority: 8, value: 1})
+	q.Push(&Node{priority: 7, value: 2})
+	q.Push(&Node{priority: 9, value: 3})
 
-	items := map[string]int{
-		"banana": 3, "apple": 2, "pear": 4,
+	top := q.Top()
+	t.Log(top.priority, top.value)
+
+	for q.Len() > 0 {
+		x := q.Pop()
+		t.Log(x.priority, x.value)
 	}
-	pq := make(PQ, len(items))
-	i := 0
+}
 
-	for value, priority := range items {
-		pq[i] = &Node{
-			value:    value,
-			priority: priority,
-			index:    i,
-		}
-		i++
-	}
-	heap.Init(&pq)
-
-	t.Log(pq)
-
-	item := &Node{
-		value:    "orange",
-		priority: 1,
-	}
-	heap.Push(&pq, item)
-
-	for pq.Len() > 0 {
-		item := heap.Pop(&pq).(*Node)
-		t.Log(item.value)
-		t.Log(item.priority)
-	}
-
+func (this *Node) Less(node *Node) bool {
+	return this.priority < node.priority
 }
